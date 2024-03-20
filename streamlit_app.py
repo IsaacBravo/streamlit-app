@@ -172,10 +172,40 @@ image = Image.open('climate_image.jpeg')
 image_path = 'climate_image.jpeg'
 image_width = 450
 
+# style
+th_props = [
+  ('font-size', '20px'),
+  ('font-weight', 'bold'),
+  ('color', '#fff'),
+  ('text-align', 'center'),
+  ('text-shadow', '0 1px 0 #000'),
+  ('background-color', 'blue'),
+  ('padding', '5px 10px'),
+  ('box-shadow', '0 0 20px rgba(0, 0, 0, 0.15)')
+  ]
+                               
+td_props = [
+  ('font-size', '17px'),
+  ('text-align', 'center')
+  ]
+
+table_props = [
+  ('border', '1px solid #6d6d6d'),
+  ('border-radius', '30px'),
+  ('overflow', 'hidden')
+  ]
+                                 
+styles_dict = [
+  dict(selector="th", props=th_props),
+  dict(selector="td", props=td_props),
+  dict(selector="table", props=table_props)
+  ]
+
+
 result_df = process_image(image_path)
 
 # UI - Original image and predictions (pre-loaded image)
-grid_image, grid_space, grid_predictions = st.columns([3,3,3])
+grid_image, grid_predictions = st.columns([3,3])
 
 with grid_image:
     example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Original Image &#128247;</p>'
@@ -185,9 +215,16 @@ with grid_image:
 with grid_predictions:
     example_text_2 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Model Predictions &#127919;</p>'
     st.markdown(example_text_2, unsafe_allow_html=True)
-    st.dataframe(result_df)
+    # st.table(result_df.style.set_properties(**{'border-radius': '30px'}).set_table_styles(styles_dict))
+    st.markdown("""
+        <style>
+        table {border-radius: 60px;}
+        </style>
+        """, unsafe_allow_html=True)
+    st.dataframe(result_df.style.background_gradient(cmap='Blues'))
 
 st.divider()
+
 # UI - User input and predictions
 user_example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Upload your own Image! &#128247;</p>'
 st.markdown(user_example_text_1, unsafe_allow_html=True)
@@ -199,7 +236,7 @@ st.warning("""
 Please consider that analizing an image may take a few seconds.
 """)
 
-grid_space, grid_image, grid_predictions = st.columns([3,3,3])
+grid_image, grid_predictions = st.columns([3,3])
 
 if uploaded_file_example_1 is not None:
     image_user = Image.open(uploaded_file_example_1 )
@@ -219,12 +256,14 @@ if uploaded_file_example_1 is not None:
         result = process_image(file_path)
         example_text_2 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Model Predictions &#127919;</p>'
         st.markdown(example_text_2, unsafe_allow_html=True)
-        st.dataframe(result)
+        st.dataframe(result.style.background_gradient(cmap='Blues'))
     st.divider()
 else:
     st.write("Please upload an image. :point_up:")
 
 st.divider()
+
+
 # UI - User input image/label and predictions
 # Prepare the inputs -- ADD THE PATH WHERE IS THE IMAGE
 image_2 = Image.open('climate_image_2.jpeg')
@@ -251,13 +290,13 @@ with grid_image:
 with grid_predictions_1:
     example_text_2 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Model Predictions (Multi label) &#127919;</p>'
     st.markdown(example_text_2, unsafe_allow_html=True)
-    st.dataframe(result_df_labels_1)
+    st.dataframe(result_df_labels_1.style.background_gradient(cmap='Blues'))
     st.info("""For this example we defined the following labels: wildfires, drought, pollution, deforestation, and flood.""")
 
 with grid_predictions_2:
     example_text_2 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Model Predictions (One label) &#127919;</p>'
     st.markdown(example_text_2, unsafe_allow_html=True)
-    st.dataframe(result_df_labels_2)
+    st.dataframe(result_df_labels_2.style.background_gradient(cmap='Blues'))
     st.info("""For this example we ask the following question: Does the image represent a flood?""")
 st.divider()
 
@@ -302,7 +341,7 @@ if uploaded_file_example_2 is not None:
             st.markdown(example_text_3, unsafe_allow_html=True)
             labels_user_list = [label.strip() for label in labels_user.split(',')]
             result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
-            st.dataframe(result_df_labels_3)
+            st.dataframe(result_df_labels_3.style.background_gradient(cmap='Blues'))
         else:
             st.info("Please enter one or multiple labels.")
 else:
