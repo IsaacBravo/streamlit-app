@@ -121,6 +121,49 @@ def process_image_labels(image_path, labels):
 
     return df
 
+def process_image_labels_binary(image_path, labels):
+    # Load the image
+    image = Image.open(image_path)
+    image_width = 450
+    categories = ['Yes', 'No']
+    topk = 2
+
+    # Preprocess the image
+    image_input = preprocess(image).unsqueeze(0).to(device)
+    text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in labels]).to(device)
+    results = {}
+    
+    # Calculate features
+    with torch.no_grad():
+        image_features = model.encode_image(image_input)
+        text_features = model.encode_text(text_inputs)
+
+    for key in image_features():
+        image_features = image_features[key]
+        image_features /= image_features.norm(dim=-1, keepdim=True)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+        similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+        values, indices = similarity[0].topk(len(labels))
+        key = key[97:key.find(".")]
+        results[key]={}
+
+    # Print the result
+    print("\nTop predictions:\n")
+    for value, index in zip(values, indices):
+        print(f"{labels[index]:>16s}: {100 * value.item():.2f}%")
+
+    # Store top predictions in results dictionary
+    for k in range(topk):
+        results[key][categories[indices[k]]] = float(values[k])
+
+    # Create the DataFrame
+    df = pd.DataFrame(results[key].items(), columns=['Class Name', 'Percentage'])
+
+    # Sort the DataFrame by Percentage
+    df = df.sort_values(by='Percentage', ascending=False)
+
+    return df
+
 
 # Download the dataset
 cifar100 = CIFAR100(root=os.path.expanduser("~/.cache"), download=True, train=False)
@@ -280,7 +323,8 @@ st.divider()
 grid_image, grid_space, grid_predictions_1, grid_predictions_2 = st.columns([3,1,3,3])
 
 result_df_labels_1 = process_image_labels(image_path_2, labels=['wildfires', 'drought', 'pollution', 'deforestation', 'flood'])
-result_df_labels_2 = process_image_labels(image_path_2, labels=['drought'])
+# result_df_labels_2 = process_image_labels_binary(image_path_2, labels=['wildfires'])
+result_df_labels_2 = process_image_labels(image_path_2, labels=['wildfires'])
 
 with grid_image:
     example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Original Image &#128247;</p>'
