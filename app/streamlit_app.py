@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from utils import icon
 import tempfile
-from streamlit_option_menu import option_menu
+# from streamlit_option_menu import option_menu
 
 # Set the environment variable
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'

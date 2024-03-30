@@ -1,0 +1,9 @@
+streamlit
+os
+clip
+torch
+PIL
+torchvision
+matplotlib
+pandas 
+tempfile
