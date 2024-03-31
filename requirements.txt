@@ -1,7 +1,8 @@
 streamlit
-# clip
+clip
 torch
-pillow
+PIL
 torchvision
 matplotlib
-pandas
+pandas 
+tempfile
