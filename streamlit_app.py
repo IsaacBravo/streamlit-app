@@ -125,57 +125,76 @@ def process_image_labels_binary(image_path, labels):
     # Load the image
     image = Image.open(image_path)
     image_width = 450
-    categories = ['Yes', 'No']
-    topk = 2
 
     # Preprocess the image
     image_input = preprocess(image).unsqueeze(0).to(device)
     text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in labels]).to(device)
-    results = {}
-    
+
     # Calculate features
     with torch.no_grad():
         image_features = model.encode_image(image_input)
         text_features = model.encode_text(text_inputs)
 
-    for key in image_features():
-        image_features = image_features[key]
-        image_features /= image_features.norm(dim=-1, keepdim=True)
-        text_features /= text_features.norm(dim=-1, keepdim=True)
-        similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
-        values, indices = similarity[0].topk(len(labels))
-        key = key[97:key.find(".")]
-        results[key]={}
+    # Pick the top 5 most similar labels for the image
+    image_features /= image_features.norm(dim=-1, keepdim=True)
+    text_features /= text_features.norm(dim=-1, keepdim=True)
+    similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+
+    values, indices = similarity[0].topk(len(labels))
+    top_probs, top_labels = similarity.topk(len(labels), dim=-1)
 
     # Print the result
     print("\nTop predictions:\n")
     for value, index in zip(values, indices):
         print(f"{labels[index]:>16s}: {100 * value.item():.2f}%")
 
-    # Store top predictions in results dictionary
-    for k in range(topk):
-        results[key][categories[indices[k]]] = float(values[k])
+    # Empty lists to store the results
+    class_names = []
+    percentages = []
+
+    # Iterate over values and indices
+    for value, index in zip(values, indices):
+        # Get the class name and percentage
+        class_name = labels[index]
+        percentage = 100 * value.item()
+
+        # Append to the lists
+        class_names.append(class_name)
+        percentages.append(percentage)
 
     # Create the DataFrame
-    df = pd.DataFrame(results[key].items(), columns=['Class Name', 'Percentage'])
+    df = pd.DataFrame({
+        'Class Name': class_names,
+        'Percentage': percentages
+    })
 
     # Sort the DataFrame by Percentage
     df = df.sort_values(by='Percentage', ascending=False)
 
     return df
 
+############################################################################################################
+# Load the CIFAR-100 dataset
+############################################################################################################
 
 # Download the dataset
 cifar100 = CIFAR100(root=os.path.expanduser("~/.cache"), download=True, train=False)
 
+
+############################################################################################################
 # UI configurations
+############################################################################################################
+
 st.set_page_config(page_title="Home - Clip Model Prototype",
                    page_icon=":desktop_computer:",
                    initial_sidebar_state="auto",
                    layout="wide"             
                    )
 
+############################################################################################################
 # UI sidebar - Menu
+############################################################################################################
+
 with st.sidebar:
      st.title(":blue[Image Classification Prototype: Clip Model]")
      st.divider()
@@ -210,12 +229,9 @@ st.divider()
 generated_images_placeholder = st.empty()
 gallery_placeholder = st.empty()
 
-# Prepare the inputs -- ADD THE PATH WHERE IS THE IMAGE
-image = Image.open('climate_image.jpeg')
-image_path = 'climate_image.jpeg'
-image_width = 450
-
+############################################################################################################
 # style
+############################################################################################################
 th_props = [
   ('font-size', '20px'),
   ('font-weight', 'bold'),
@@ -244,6 +260,13 @@ styles_dict = [
   dict(selector="table", props=table_props)
   ]
 
+############################################################################################################
+# Prepare the inputs -- EXAMPLE 1
+############################################################################################################
+
+image = Image.open('climate_image.jpeg')
+image_path = 'climate_image.jpeg'
+image_width = 450
 
 result_df = process_image(image_path)
 
@@ -268,7 +291,10 @@ with grid_predictions:
 
 st.divider()
 
-# UI - User input and predictions
+############################################################################################################
+# UI - User input and predictions # USER EXAMPLE 1
+############################################################################################################
+
 user_example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Upload your own Image! &#128247;</p>'
 st.markdown(user_example_text_1, unsafe_allow_html=True)
 user_example_text_2 = '<p style="font-family:Source Sans Pro; color:black; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Now you can test the model using your own image data, and see how the model detect the different elements on your image.</p>'
@@ -306,9 +332,10 @@ else:
 
 st.divider()
 
+############################################################################################################
+# Prepare the inputs -- EXAMPLE 2
+############################################################################################################
 
-# UI - User input image/label and predictions
-# Prepare the inputs -- ADD THE PATH WHERE IS THE IMAGE
 image_2 = Image.open('climate_image_2.jpeg')
 image_path_2 = 'climate_image_2.jpeg'
 
@@ -323,8 +350,7 @@ st.divider()
 grid_image, grid_space, grid_predictions_1, grid_predictions_2 = st.columns([3,1,3,3])
 
 result_df_labels_1 = process_image_labels(image_path_2, labels=['wildfires', 'drought', 'pollution', 'deforestation', 'flood'])
-# result_df_labels_2 = process_image_labels_binary(image_path_2, labels=['wildfires'])
-result_df_labels_2 = process_image_labels(image_path_2, labels=['wildfires'])
+result_df_labels_2 = process_image_labels_binary(image_path_2, labels=['Yes', 'No'])
 
 with grid_image:
     example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Original Image &#128247;</p>'
@@ -344,6 +370,11 @@ with grid_predictions_2:
     st.info("""For this example we ask the following question: Does the image represent a flood?""")
 st.divider()
 
+
+############################################################################################################
+# UI - User input and predictions # USER EXAMPLE 2
+############################################################################################################
+
 # UI - User input and predictions
 user_example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Upload your own Image! &#128247;</p>'
 st.markdown(user_example_text_1, unsafe_allow_html=True)
@@ -361,7 +392,7 @@ with grid_text_1:
     user_example_text_3 = '<p style="font-family:Source Sans Pro; color:black; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Now you can define either one or a set of labels to classify your image: &#128073;</p>'
     st.markdown(user_example_text_3, unsafe_allow_html=True)
 with grid_text_2:
-    labels_user = st.text_input('Enter one or multiple labels')
+    labels_user = st.text_input('Enter one or multiple labels (separated by comma).')
 
 grid_image, grid_predictions = st.columns([3,3])
 
@@ -387,7 +418,7 @@ if uploaded_file_example_2 is not None:
             result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
             st.dataframe(result_df_labels_3.style.background_gradient(cmap='Blues'))
         else:
-            st.info("Please enter one or multiple labels.")
+            st.info("Please enter one or multiple labels (separated by comma).")
 else:
     st.write("")
 

@@ -1,3 +1,0 @@
-TO DO list:
-- Check the code for the case when only one label is used to train the model.
-- Add the possibility to use the model to predict the label in a binary way (Yes/No) instead of the probability.
