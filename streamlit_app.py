@@ -37,7 +37,7 @@ def process_image(image_path):
     similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
 
     values, indices = similarity[0].topk(5)
-    top_probs, top_labels = similarity.topk(5, dim=-1)
+    #top_probs, top_labels = similarity.topk(5, dim=-1)
 
     # Print the result
     print("\nTop predictions:\n")
@@ -89,7 +89,7 @@ def process_image_labels(image_path, labels):
     similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
 
     values, indices = similarity[0].topk(len(labels))
-    top_probs, top_labels = similarity.topk(len(labels), dim=-1)
+    #top_probs, top_labels = similarity.topk(len(labels), dim=-1)
 
     # Print the result
     print("\nTop predictions:\n")
@@ -121,14 +121,16 @@ def process_image_labels(image_path, labels):
 
     return df
 
-def process_image_labels_binary(image_path, labels):
+def process_image_labels_binary(image_path, label):
     # Load the image
     image = Image.open(image_path)
-    image_width = 450
+    #image_width = 450
 
     # Preprocess the image
     image_input = preprocess(image).unsqueeze(0).to(device)
-    text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in labels]).to(device)
+    labels = ['Yes.', 'No.']
+    text_prompts = [f'Does this image contain {label}?', 'Does this image have something?']
+    text_inputs = clip.tokenize(text_prompts).to(device)
 
     # Calculate features
     with torch.no_grad():
@@ -350,7 +352,7 @@ st.divider()
 grid_image, grid_space, grid_predictions_1, grid_predictions_2 = st.columns([3,1,3,3])
 
 result_df_labels_1 = process_image_labels(image_path_2, labels=['wildfires', 'drought', 'pollution', 'deforestation', 'flood'])
-result_df_labels_2 = process_image_labels_binary(image_path_2, labels=['Yes', 'No'])
+result_df_labels_2 = process_image_labels_binary(image_path_2, "flood")
 
 with grid_image:
     example_text_1 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Original Image &#128247;</p>'
@@ -415,6 +417,10 @@ if uploaded_file_example_2 is not None:
             example_text_3 = '<p style="font-family:Source Sans Pro; color:#2368CC; font-size: 20px; letter-spacing: -0.005em; line-height: 1.5;">Model Predictions &#127919;</p>'
             st.markdown(example_text_3, unsafe_allow_html=True)
             labels_user_list = [label.strip() for label in labels_user.split(',')]
+            if len(labels_user_list) == 1:
+                result_df_labels_3 = process_image_labels_binary(file_path, labels_user_list[0])
+            else:
+                result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
             result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
             st.dataframe(result_df_labels_3.style.background_gradient(cmap='Blues'))
         else:
