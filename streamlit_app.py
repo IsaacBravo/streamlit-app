@@ -129,7 +129,7 @@ def process_image_labels_binary(image_path, label):
     # Preprocess the image
     image_input = preprocess(image).unsqueeze(0).to(device)
     labels = ['Yes.', 'No.']
-    text_prompts = [f'Does this image contain {label}?', 'Does this image have something?']
+    text_prompts = [f'A photo of a {label}', 'A photo of a something']
     text_inputs = clip.tokenize(text_prompts).to(device)
 
     # Calculate features
@@ -143,7 +143,7 @@ def process_image_labels_binary(image_path, label):
     similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
 
     values, indices = similarity[0].topk(len(labels))
-    top_probs, top_labels = similarity.topk(len(labels), dim=-1)
+    #top_probs, top_labels = similarity.topk(len(labels), dim=-1)
 
     # Print the result
     print("\nTop predictions:\n")
@@ -421,7 +421,6 @@ if uploaded_file_example_2 is not None:
                 result_df_labels_3 = process_image_labels_binary(file_path, labels_user_list[0])
             else:
                 result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
-            result_df_labels_3 = process_image_labels(file_path, labels=labels_user_list)
             st.dataframe(result_df_labels_3.style.background_gradient(cmap='Blues'))
         else:
             st.info("Please enter one or multiple labels (separated by comma).")
